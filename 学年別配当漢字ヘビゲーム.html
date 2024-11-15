@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake! for E.S.</title>
+
+    <style>
+    * {
+        padding: 0; margin: 0;
+    }     
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #000000;
+    }
+    .game-container {
+        width: 520px;
+        height: 520px;
+        color: #017301;
+        font-size: small;
+        border: 1px solid #00ff00;
+        background-color: #000000;
+        box-shadow: 0px 0px 20px #8cd28c;
+    }
+    .navi-container {
+        margin: 10px;
+        color: #00ff00;
+        text-align: center;
+    }
+    #title {
+        font-size: 20px;
+        transform: scaleY(2.4);
+        line-height: 20px;
+        margin-bottom: 80px;
+    }
+    button{
+        font-size: 16px;
+        padding: 2px;
+        color: #00ff00;
+        vertical-align: middle;
+        background-color: #010101;
+        border-color: #00ff00;
+        border-radius: 10%;
+        box-shadow: 0px 0px 10px #8cd28c;
+    }
+    button:hover{
+        background-color: #023c02;
+    }
+    </style>
+</head>
+
+
+<body onload="init()">
+    <div class="game-container">
+        <canvas width="520" height="520" id="field"></canvas>
+        ※学年を選んでカーソルキーでスタート！ 壁や自分自身に触れたらゲームオーバー。
+    </div>
+    <div class="navi-container">
+        <div id="title">学年別<br>｜配当｜<br>｜漢字｜<br>｜ヘビ｜<br>ゲーム</div>
+        <div id="score" style="color: #ff0000; font-size: 28px;">0000</div><br>
+        <button onclick="words = grade1;">1年</button><button onclick="words = grade2;">2年</button><br>
+        <button onclick="words = grade3;">3年</button><button onclick="words = grade4;">4年</button><br>
+        <button onclick="words = grade5;">5年</button><button onclick="words = grade6;">6年</button><br><br>
+        <button onclick="location.reload();">RETRY</button><br>     <!--現在のurlを再読み込みする-->
+    </div>
+
+
+    <script>
+    let W, H, S = 20;
+    let snake = [], foods = [];
+    let keyCode = 0;
+    let score = 0;
+    let timer = NaN;
+    let ctx;
+    const scoreElement = document.getElementById("score");
+
+    let grade1 = "口右雨円王左三貝一学気九休玉金空月男糸字耳犬見五校車手川先早草足村竹中虫山子四大七音下火花町天田土二十出女小上森人水正生青夕石赤千日入年白八百文木本名目立力林六";
+    let grade2 = "回引羽雲外角兄形計元言原戸古活間丸岩顔今才細作算止市矢紙寺自時室園遠何科夏家強教近社弱首秋週春午歌画会海絵姉思楽汽記帰弓牛魚京後語工公広交光考行高黄合谷国黒書少場色食心新親図数西声星晴切雪船線前組走多太体台地池知茶昼長鳥朝直通弟店点電刀冬当東答頭同道読内南肉馬売買麦半番父鳴毛門夜野友用曜来風分聞米歩母方北毎妹万明里理話";
+    let grade3 = "区悪安暗医飲運泳起期客究急実写者駅委意育員院級宮球去指歯詩次事持式央横屋温化荷界開階寒感主守取酒受州拾終習集橋業漢館岸曲局銀苦具君係軽血決研県庫湖向幸港号根祭皿仕死使始住重宿所暑助昭消商章勝乗植申身神真深進世整昔全相送想息速族他打対待代第題炭短談着注柱丁帳調追定庭笛鉄転都度投豆島湯登等動童農福物平返勉放味命面問役薬由油波配倍箱畑発反坂板皮悲美鼻筆氷表秒病品負部服有遊予羊洋葉陽様落流旅両緑礼列練路和";
+    let grade4 = "囲愛案以昨札刷殺察参産求泣救喜旗器機議改械害街各給挙漁印衣位胃希季紀覚康告差菜最材英栄塩億加果貨課芽散残士氏史司試完官管関観願共協鏡競極訓軍郡径型景芸欠結建健験固功好候航児治辞失借種周祝順初松笑唱焼象照賞臣信成省清静席積折節説浅戦選然争倉巣束側続卒孫帯隊達単置仲貯兆腸低底停的典伝徒努辺変便包法望牧末満未脈民無約勇灯堂働特得毒熱念敗梅博飯飛費必票標不夫付府副粉兵別要養浴利陸良料量輪類令冷例歴連老労録";
+    let grade5 = "因圧移永営衛額再災妻採際在財険検桜恩可仮価河罪禁句群経潔件券過賀快解雑酸賛支志枝師資易益液演応往境均格確飼刊幹慣眼基寄規技義逆久旧居許限現減故個護効厚耕鉱構興講混査示似識質舎謝授修述術準序招承証条状常情織職制性政勢精製税責績接設舌絶銭祖素総造像増則測属率損退貸態団布婦富武復複仏編弁保墓報豊防貿暴断築張提程適敵統銅導徳独任燃能破犯判版比肥非備俵評貧務夢迷綿輸余預容略留領";
+    let grade6 = "困異遺域絹権憲源革閣割株干巻看射捨尺若樹収厳降鋼我灰拡宗就衆従縦宇映延己呼誤后孝皇紅沿警劇激穴縮熟純処署諸簡危机揮貴疑吸供胸郷勤筋系敬刻穀骨砂座済裁策冊蚕至私姿視詞誌磁除将傷障城蒸針仁垂推寸盛聖誠宣専泉洗染善奏窓創装層操蔵臓存尊宅担探誕段暖値宙忠著庁頂潮賃痛展討枚幕密盟模訳郵優幼欲翌乱卵覧裏律臨朗党糖届難乳認納脳派拝背肺俳班晩否批秘腹奮並陛閉片補暮宝訪亡忘棒論";
+    let words = grade1;
+    let word = '■';
+
+    
+    function Point(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    function init() {
+        let canvas = document.getElementById('field');
+        W = canvas.width / S;
+        H = canvas.height / S;
+        ctx = canvas.getContext('2d');
+        ctx.font = "24px sans-serif";
+
+        snake.push(new Point(W / 2, H / 2));
+
+        for (let i = 0; i < 10; i++) {
+            addFood();
+        }
+
+        timer = setInterval("tick()", 200);     //0.2秒に１回更新する
+        window.onkeydown = keydown;
+    }
+
+    function addFood() {
+        while (true) {
+            let x = Math.floor(Math.random() * W);
+            let y = Math.floor(Math.random() * H);
+            if (isHit(foods, x, y) || isHit(snake, x, y)) {
+            continue;
+            }
+            foods.push(new Point(x, y));
+            break;
+        }
+    }
+
+    function isHit(data, x, y) {
+        for (let i = 0; i < data.length; i++) {
+            if (data[i].x == x && data[i].y == y) {
+            return true;
+            }
+        }
+        return false;
+    }
+
+    function moveFood(x, y) {
+        foods = foods.filter(function (p) {
+            return (p.x != x || p.y != y);
+        });
+        addFood();
+    }
+
+    function tick() {
+        let x = snake[0].x;
+        let y = snake[0].y;
+
+        switch (keyCode) {
+            case 37: x--; break;
+            case 38: y--; break;
+            case 39: x++; break;
+            case 40: y++; break;
+            default: paint(); return;
+        }
+
+        if (isHit(snake, x, y) || x < 0 || x >= W || y < 0 || y >= H) {
+            alert("あなたの負けです！");
+            clearInterval(timer);
+            return;
+        }
+
+        snake.unshift(new Point(x, y));
+
+        if (words=="") {
+            alert("あなたの勝ちです！");
+            clearInterval(timer);
+            return;
+        }
+
+        if (isHit(foods, x, y)) {
+            console.log(words);
+            score += 10;
+            word = words.slice(0,1);
+            words = words.slice(1);
+
+            let uttr = new SpeechSynthesisUtterance(word+'にょろろ');      //ブラウザ標準のWebSpeechAPIを使う
+            uttr.lang = 'ja-JP';
+            speechSynthesis.speak(uttr);    
+
+            moveFood(x, y);
+        } else {
+            snake.pop();
+        }
+
+        paint();
+    }
+
+    function paint() {
+        scoreElement.textContent = ('0000' + score).slice(-4);      //Zero Padding：桁数に満たない数値の場合に、足りない桁数だけ0を追加して桁数を合わせる
+        ctx.clearRect(0, 0, W * S, H * S);
+        foods.forEach(function (p) {
+            ctx.fillStyle = "#00ff00";
+            ctx.fillText("●", p.x * S, (p.y + 1) * S);
+        });
+        snake.forEach(function (p) {
+            ctx.fillStyle = "#6b0909";
+            ctx.fillText("■", p.x * S, (p.y + 1) * S);
+            ctx.fillStyle = "#ff0000";
+            ctx.fillText(word, p.x * S, (p.y + 1) * S);
+        });
+    }
+
+    function keydown(event) {
+        keyCode = event.keyCode;
+    }
+    </script>
+
+</body>
+</html>
